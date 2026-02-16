@@ -1,0 +1,58 @@
+{:paths ["src"]
+ :deps {}
+
+ :tasks
+ {:requires ([babashka.fs :as fs])
+
+  backup-datahike
+  {:doc "Export Datahike KG via nREPL (hot JVM, ~1s)"
+   :task (shell "bash" "scripts/backup-datahike.sh")}
+
+  backup-chroma
+  {:doc "Backup Chroma SQLite from Docker container"
+   :task (shell "bash" "scripts/backup-chroma.sh")}
+
+  backup-datalevin
+  {:doc "Backup Datalevin LMDB directory as tar.gz"
+   :task (shell "bash" "scripts/backup-datalevin.sh")}
+
+  restore-datalevin
+  {:doc "Restore Datalevin from tar.gz backup"
+   :task (let [file (first *command-line-args*)]
+           (when-not file
+             (println "Usage: bb restore-datalevin <backup.tar.gz>")
+             (System/exit 1))
+           (shell "bash" "scripts/restore-datalevin.sh" file))}
+
+  chroma-check
+  {:doc "Check Chroma environment health"
+   :task (apply shell "bb" "scripts/chroma-check.bb" *command-line-args*)}
+
+  nrepl-eval
+  {:doc "Evaluate Clojure code on a running nREPL (usage: bb nrepl-eval '(+ 1 2)')"
+   :task (let [code (first *command-line-args*)
+               port (or (System/getenv "NREPL_PORT") "7888")]
+           (when-not code
+             (println "Usage: bb nrepl-eval '<clojure-code>' [--port PORT]")
+             (System/exit 1))
+           (shell "bb" "src/bb_backup/nrepl_client.bb" "--port" port "--code" code))}
+
+  install-systemd
+  {:doc "Install systemd user timers for daily backups"
+   :task (shell "bash" "systemd/install.sh")}
+
+  list-backups
+  {:doc "List recent backups across all databases"
+   :task (do
+           (println "=== Recent Backups ===")
+           (doseq [subdir ["datahike" "chroma" "datalevin"]
+                   :let [dir (str (System/getenv "HOME") "/backups/" subdir)]
+                   :when (fs/exists? dir)]
+             (println (str "\n[" subdir "]"))
+             (let [files (->> (fs/list-dir dir)
+                              (sort-by (fn [f] (fs/last-modified-time f)))
+                              reverse
+                              (take 5))]
+               (doseq [f files]
+                 (println (str "  " (fs/file-name f)
+                               "  " (fs/size f) " bytes"))))))}}}

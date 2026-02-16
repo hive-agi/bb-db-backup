@@ -1,0 +1,5 @@
+{:project-id "bb-db-backup"
+ :description "FOSS daily backup scripts for Clojure database backends (Datahike, Datalevin, Chroma)"
+ :parent-id "hive"
+ :lang :bb
+ :tags [:backup :datahike :datalevin :chroma :nrepl :babashka]}

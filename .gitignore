@@ -1,0 +1,18 @@
+# Babashka
+.cpcache/
+.nrepl-port
+
+# Backups (output, not source)
+*.sqlite3
+*.tar.gz
+*.edn.bak
+
+# Editor
+.idea/
+*.swp
+*~
+.#*
+
+# OS
+.DS_Store
+Thumbs.db
